@@ -25,10 +25,10 @@ Redux 规定，将模型的更新逻辑全部集中于 `reducer` 层，不允许
 
 - 示例Action：
 ``` js
-const ACTION_TEST = 'ACTION_TEST';
+const ADD_MESSAGE = 'ADD_MESSAGE';
 
 {
-  type: ACTION_TEST,
+  type: ADD_MESSAGE,
   data
   // 其它数据
 }
@@ -40,11 +40,39 @@ const ACTION_TEST = 'ACTION_TEST';
 Action 创建函数，是一个返回action的简单函数，这样做方便移植和测试。
 - 示例
 ``` js
-function actionTest(data) {
+function addMessage(data) {
   return {
-    type: ACTION_TEST,
+    type: ADD_MESSAGE,
     data
   };
 }
 ```
 Redux 中只需把 action 创建函数的结果传给 `dispatch()` 方法即可发起一次 dispatch 过程。
+
+## Reducer
+Action 描述了事情已经发生，Reducer来执行具体如何更新state。
+
+1. 先设计state的结构，以一个消息列表为例：
+	``` js
+	{
+	  list: [
+	    {
+	      text: 'Consider using Redux',
+	      create_time: '2016-05-21 12:22:56'
+	    },
+	    {
+	      text: 'Keep all state in a single tree',
+	      create_time: '2016-05-21 12:22:56'
+	    }
+	  ]
+	}
+	```
+2. Action 处理
+	reducer 就是一个纯函数，接收旧的 state 和 action，返回新的 state。
+	``` js
+	```
+
+	*注意：永远不要在reducer中做以下操作：*
+	- 修改传入参数；
+	- 执行有副作用的操作，如 API 请求和路由跳转；
+	- 调用非纯函数，如 Date.now() 或 Math.random()
