@@ -1,7 +1,7 @@
 ---
 title: React 学习笔记 - 4
 date: 2016-05-20 15:28:33
-tags:
+tags: [JavaScript,React,React-router,Redux]
 ---
 
 
@@ -70,9 +70,54 @@ Action 描述了事情已经发生，Reducer来执行具体如何更新state。
 2. Action 处理
 	reducer 就是一个纯函数，接收旧的 state 和 action，返回新的 state。
 	``` js
+	import {ADD_MESSAGE} from '../actions/constants';
+
+  const initState = {
+    list: []
+  };
+
+  export function Message(state = initState, action) {
+    switch(action.type){
+      case ADD_MESSAGE:
+        // return Object.assign({}, state, {
+        //   list: [...state.list, action.data]
+        // });
+
+        let list = [...state.list, action.data];
+        return { ...state, list };
+      default:
+        return state;
+    }
+	}
 	```
+	action参数的值是 Action对象，在这里不要在state上直接进行修改，可以使用`Object.assign({}, state)` 或 其他库的 `_.assign()` 对state新建一个副本，第一个参数必须设置为空对象。还可以使用了ES7提案中的对象展开运算符，需要使用转换编译器，如Babel。Babel中使用 [babel-plugin-transform-object-rest-spread](http://babeljs.io/docs/plugins/transform-object-rest-spread/) 插件。
 
 	*注意：永远不要在reducer中做以下操作：*
 	- 修改传入参数；
 	- 执行有副作用的操作，如 API 请求和路由跳转；
-	- 调用非纯函数，如 Date.now() 或 Math.random()
+	- 调用非纯函数，如 Date.now() 或 Math.random()。
+
+3. 多个Action
+	要处理多个Action的时候，只需要在switch中添加一个case
+	``` js
+	export function Message(state = initState, action) {
+	  switch(action.type){
+      case ADD_MESSAGE:
+        let list = [...state.list, action.data];
+        return { ...state, list };
+      case DELETE_MESSAGE:
+        let index = action.index;
+        if(index >= 0 && index < state.list.length){
+          let list = [...state.list.slice(0, index), ...state.list.slice(index+1)];
+          return {...state, list};
+        }
+
+        return state;
+      default:
+        return state;
+    }
+	}
+	```
+
+
+
