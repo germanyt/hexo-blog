@@ -98,9 +98,9 @@ Action 描述了事情已经发生，Reducer来执行具体如何更新state。
 	- 调用非纯函数，如 Date.now() 或 Math.random()。
 
 3. 多个Action
-	要处理多个Action的时候，只需要在switch中添加一个case
+	要处理多个Action的时候，在switch中为每一个Action添加一个case。
 	``` js
-	export function Message(state = initState, action) {
+	export function message(state = initState, action) {
 	  switch(action.type){
       case ADD_MESSAGE:
         let list = [...state.list, action.data];
@@ -118,6 +118,27 @@ Action 描述了事情已经发生，Reducer来执行具体如何更新state。
     }
 	}
 	```
+
+4. 多个reducer
+  多个Action时，需要合理的设计state结构，例如如下结构state，可以拆分filter和message为两个reducer。建议为每个reducer对应一个文件，应用庞大时可使用文件夹分类。
+  ``` js
+  {
+    filter: {
+      key: 'Redux'
+    },
+    message: [
+      {
+        text: 'Consider using Redux',
+        create_time: '2016-05-21 12:22:56'
+      },
+      {
+        text: 'Keep all state in a single tree',
+        create_time: '2016-05-21 12:22:56'
+      }
+    ]
+  }
+  ```
+
 
 
 
