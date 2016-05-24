@@ -3,7 +3,7 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Gavin's space
+title: Blog of Gavin
 subtitle:
 description:
 author: Gavin
@@ -72,3 +72,5 @@ deploy:
   repo: git@github.com:germanyt/germanyt.github.io.git
   branch: master
   message: Site updated {{ now('YYYY-MM-DD HH:mm:ss') }}
+
+disqus_shortname: gavin8
