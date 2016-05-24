@@ -1,7 +1,7 @@
 ---
 title: React 学习笔记 - 2
 date: 2016-05-17 10:39:14
-tags: [JavaScript,React,React-router,Redux]
+tags: [JavaScript,React,React-router]
 ---
 
 ## 简介

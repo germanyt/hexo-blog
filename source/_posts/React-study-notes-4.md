@@ -1,7 +1,7 @@
 ---
 title: React 学习笔记 - 4
 date: 2016-05-20 15:28:33
-tags: [JavaScript,React,React-router,Redux]
+tags: [JavaScript,React,Redux]
 ---
 
 
@@ -138,7 +138,181 @@ Action 描述了事情已经发生，Reducer来执行具体如何更新state。
     ]
   }
   ```
+  现在我们在reducers文件夹下建两个reducer文件，分别命名为filter.reducer.js和message.reducer.js。
+  ``` js
+  // filter.reducer.js
+  import { INPUT_FILTER_KEY } from '../actions/constants';
+
+  const initState = {
+    key: ''
+  };
+
+  export default function filter(state = initState, action) {
+    switch(action.type) {
+      case INPUT_FILTER_KEY:
+        let key = action.key || '';
+        return {...state, key};
+      default:
+        return state;
+    }
+  }
+  ```
+  ``` js
+  // message.reducer.js
+  import {ADD_MESSAGE, DELETE_MESSAGE} from '../actions/constants';
+
+  const initState = []
+
+  export default function message(state = initState, action) {
+    switch(action.type){
+      case ADD_MESSAGE:
+        return [...state, action.data];
+      case DELETE_MESSAGE:
+        let index = action.index;
+        if(index >= 0 && index < state.length){
+          return [...state.slice(0, index), ...state.slice(index+1)];
+        }
+
+        return state;
+      default:
+        return state;
+    }
+  }
+  ```
+  由于应用中只能存在单一的state树，所以我们需要将上面两个reducer合并成一个，Redux 提供了 `combineReducers()` 工具类来合并多个reducer。
+  现在我们在reducers文件夹下，新建一个 `index.js` 文件使用 `combineReducers()` 合并两个reducer：
+  ``` js
+  import { combineReducers } from 'redux';
+
+  import message from './message.reducer';
+  import filter from './filter.reducer';
+
+  const messageApp = combineReducers( {
+    message,
+    filter
+  } );
+
+  export default messageApp;
+  ```
+  注意上面的写法和下面完全等价：
+  ``` js
+  import message from './message.reducer';
+  import filter from './filter.reducer';
+
+  export default function messageApp(state = {}, action){
+    return {
+      message: message(state.message, action),
+      filter: filter(state.filter, action)
+    }
+  };
+  ```
 
 
+## Store
+
+Store 就是把Action 和 reducer 联系到一起的对象。Store 有以下职责：
+- 维持应用的 state；
+- 提供 `getState()` 方法获取 state；
+- 提供 `dispatch(action)` 方法更新 state；
+- 通过 `subscribe(listener)` 注册监听器;
+- 通过 `subscribe(listener)` 返回的函数注销监听器。
+
+再次强调一下 *Redux 应用只有一个单一的 store*。当需要拆分数据处理逻辑时，你应该使用 reducer 组合 而不是创建多个 store。
+根据已有的reducer创建store非常容易。现在我们导入前面合并后的reducer，并传递给 `ctreateStore()`。
+
+- 创建一个store文件
+``` js
+import { createStore } from 'redux';
+
+import messageApp from '../reducers';
+
+let store = createStore(messageApp);
+
+export default store;
+```
+
+## 发起Actions
+现在我们已经建好了store，在没有页面的情况下就已经可以开始测试数据了。
+- 测试store
+``` js
+import store from './store';
+import {addMessage, deleteMessage, inputFilterKey} from './actions';
+
+console.log(store.getState());
+
+// 每次 state 更新时，打印日志
+// 注意 subscribe() 返回一个函数用来注销监听器
+let unsubscribe = store.subscribe(() =>
+  console.log(store.getState())
+);
+
+// 发起一系列 action
+store.dispatch(addMessage({text: 'Learn about actions', create_time: '2016-05-24 11:09:24'}));
+store.dispatch(addMessage({text: 'Learn about reducers', create_time: '2016-05-24 11:09:24'}));
+store.dispatch(addMessage({text: 'Learn about store', create_time: '2016-05-24 11:09:24'}));
+store.dispatch(deleteMessage(2));
+store.dispatch(deleteMessage(0));
+store.dispatch(inputFilterKey('Learn'));
+
+// 停止监听 state 更新
+unsubscribe();
+```
+
+## 连接Redux
+在我们已经写好页面的情况下，如何将页面组件与Store连接？
+我们用 `react-redux` 提供的 `connect()` 方法，将Message Component 转化成容器组件。
+- containers/message.container.js
+``` js
+import { connect } from 'react-redux';
+
+import { Message } from '../components/';
+import { addMessage, deleteMessage, inputFilterKey } from '../actions';
 
 
+// 哪些 action 创建函数是我们想要通过 props 获取的？
+function mapDispatchToProps(dispatch) {
+  return {
+    onAddMessage: (data) => dispatch(addMessage(data)),
+    onDeleteMessage: (index) => dispatch(deleteMessage(index)),
+    onChangeFilterKey: (key) => dispatch(inputFilterKey(key))
+  };
+}
+
+function filterMessage(messages, filter_key) {
+  if(filter_key){
+    var messageList = [];
+    messages.map( (message, index) => {
+
+      if( ~message.text.indexOf(filter_key) ){
+        messageList.push({
+          id: index,
+          text: message.text,
+          create_time: message.create_time
+        });
+      };
+    });
+
+    return messageList;
+  } else {
+    return messages;
+  }
+}
+// 哪些 Redux 全局的 state 是我们组件想要通过 props 获取的？
+// 这里我们还使用了 filterMessage 来根据filter_key 筛选出相匹配的 message
+function mapStateToProps(state){
+  return {
+    messages: filterMessage(state.message, state.filter.key),
+    filter_key: state.filter.key
+  }
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Message);
+```
+
+## 参考链接
+更多API参考 [Redux Document](http://redux.js.org/docs/introduction/) [中文](http://cn.redux.js.org/index.html)
+
+示例代码地址 [Github](https://github.com/germanyt/react-study-example/tree/master/example/4)
