@@ -266,7 +266,7 @@ unsubscribe();
 import { connect } from 'react-redux';
 
 import { Message } from '../components/';
-import { addMessage, deleteMessage, inputFilterKey } from '../actions';
+import { addMessage, deleteMessage, inpuFilterKey } from '../actions';
 
 
 // 哪些 action 创建函数是我们想要通过 props 获取的？
@@ -311,6 +311,117 @@ export default connect(
   mapDispatchToProps
 )(Message);
 ```
+到此，我们已经可以使用Redux来管理React数据了，但是当我们需要和服务器进行交互或者是需要进行非纯函数操作时，应该怎么做呢？
+## 异步Action
+在使用异步Action时，一般情况下每个请求都要dispatch三个不同的Action，为了区分不同的Action，我们建议为他们定义不同的type。
+上面 addMessage 的create_time值都是静态数据，现在我们想动态的获取create time。
+- 
+``` js
+{ type: 'GET_TIME_REQUEST' }
+{ type: 'GET_TIME_FAILURE', error: 'error info' }
+{ type: 'GET_TIME_SUCCESS', data: { ... } }
+```
+1. 创建Action
+``` js
+export function addMessage(data) {
+  // return {
+  //   type: ADD_MESSAGE,
+  //   data
+  // };
+
+  return dispatch => {
+    dispatch( getTimeRequest() );
+    getTime().then(time => {
+      dispatch( getTimeSuccess() );
+
+      data.create_time = time;
+
+      dispatch( addMessageToStore(data) );
+
+    }).catch(error => dispatch( getTimeFailure(error && error.message || error) ));
+  }
+
+}
+
+function addMessageToStore(data) {
+  return {
+    type: ADD_MESSAGE,
+    data
+  };
+}
+
+function getTimeRequest() {
+  return {
+    type: GET_TIME_REQUEST
+  }
+}
+
+function getTimeFailure(error) {
+  return {
+    type: GET_TIME_FAILURE,
+    error
+  }
+}
+
+function getTimeSuccess(data) {
+  return {
+    type: GET_TIME_SUCCESS,
+    data
+  }
+}
+
+function getTime(){
+  return new Promise(function(resolve, reject){
+    let time = moment().format('YYYY-MM-DD HH:mm:ss');
+
+    resolve(time);
+  });
+}
+```
+2. 创建reducer
+``` js
+import { GET_TIME_REQUEST, GET_TIME_FAILURE, GET_TIME_SUCCESS, GET_TIME_ERROR_CLEAR } from '../actions/constants';
+
+const initState = {
+  loading: false,
+  errorInfo: ''
+};
+
+export default function getTime(state = initState, action) {
+  let loading = false;
+  let errorInfo = '';
+  switch(action.type) {
+    case GET_TIME_REQUEST:
+      loading = true;
+      return {...state, loading};
+    case GET_TIME_FAILURE:
+    case GET_TIME_SUCCESS:
+      loading = false;
+      
+      if(action.error){
+        errorInfo = JSON.stringify(action.error);
+      } else {
+        errorInfo = '';
+      }
+      return {...state, loading, errorInfo};
+    case GET_TIME_ERROR_CLEAR:
+      errorInfo = '';
+      return {...state, errorInfo};
+    default:
+      return state;
+  }
+}
+```
+3. 添加Middleware
+要在 Action 中使用 dispatch() 函数，需要中间件支持，我们选择使用 redux-thunk 。
+``` js
+import thunk from 'redux-thunk';
+let store = createStore(reducers, applyMiddleware(thunk));
+```
+
+redux-thunk 中间件不是唯一的方法。也可以使用 redux-promise 或者 redux-promise-middleware 来 dispatch Promise 替代函数。当然也可以写一个自定义的middleware。
+
+##### 现在已经可以使用redux通过同步和异步Action管理数据了。
 
 ## 参考链接
 更多API参考 [Redux Document](http://redux.js.org/docs/introduction/) [中文](http://cn.redux.js.org/index.html)
