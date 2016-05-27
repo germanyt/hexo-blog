@@ -427,3 +427,9 @@ redux-thunk 中间件不是唯一的方法。也可以使用 redux-promise 或�
 更多API参考 [Redux Document](http://redux.js.org/docs/introduction/) [中文](http://cn.redux.js.org/index.html)
 
 示例代码地址 [Github](https://github.com/germanyt/react-study-example/tree/master/example/4)
+
+## 推荐阅读
+
+[從 source code 來看 Redux 更新 state 的運行機制](https://medium.com/@as790726/%E5%BE%9E-source-code-%E4%BE%86%E7%9C%8B-redux-%E7%9A%84%E9%81%8B%E8%A1%8C%E6%A9%9F%E5%88%B6-f5e0adc1b9f6#.o4l5v2hry)
+[從 source code 來看 React-Redux 怎麼讓 Redux 跟 React 共舞](https://medium.com/@as790726/%E5%BE%9E-source-code-%E4%BE%86%E7%9C%8B-react-redux-%E6%80%8E%E9%BA%BC%E8%AE%93-redux-%E8%B7%9F-react-%E5%85%B1%E8%88%9E-a0777b99463a#.hslbm6a96)
+*需要搬梯子*

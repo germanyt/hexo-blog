@@ -80,7 +80,8 @@ module.exports = {
   module: {
     loaders: [
       { test: /\.(js|jsx)$/, exclude: /node_modules/, loader: 'babel', query: {
-          presets: ['es2015','react']
+          presets: ['es2015','react'],
+          plugins: ['transform-object-rest-spread']
         }
       }, //使用babel把 jsx和es6 转换为 es5
       { test: /\.css$/, loader: 'style!css' },
@@ -143,12 +144,12 @@ app.listen(8080, function () {
     "babel-loader": "^6.2.4",
     "babel-plugin-add-module-exports": "^0.1.2",
     "babel-plugin-dev-expression": "^0.2.1",
+    "babel-plugin-transform-object-rest-spread": "^6.8.0",
     "babel-polyfill": "^6.7.4",
     "babel-preset-es2015": "^6.6.0",
     "babel-preset-es2015-loose": "^7.0.0",
     "babel-preset-es2015-loose-native-modules": "^1.0.0",
     "babel-preset-react": "^6.5.0",
-    "babel-preset-stage-0": "^6.5.0",
     "babel-register": "^6.7.2",
     "bootstrap": "^3.3.6",
     "bundle-loader": "^0.5.4",
