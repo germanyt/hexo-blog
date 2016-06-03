@@ -149,4 +149,138 @@ function createElement(node) {
 }
 ```
 
-哇哦，看起来很不错。现在我们
+哇哦，看起来很不错。现在我们先把 `props` 放在一边，以后再讨论它。我们不需要它来理解虚拟DOM的基础概念，但是它却会增加复杂度。
+
+现在开始让我们在 JSFiddle 中尝试它：
+{% jsfiddle cL0Lc7au 'js,resources,html,css,result' %}
+
+## 变化处理
+
+我们已经能把虚拟DOM转换成真实DOM，现在思考虚拟DOM树之间的差别。我们需要写一个来对比两个虚拟DOM树（新和旧）并在真实DOM树中只做必要改变的算法。
+
+怎么对比树？我们需要下面几种情况：
+- 对应位置没有旧的节点——需要 `appendChild(…)` 添加节点
+![对应位置没有旧的节点](https://cdn-images-1.medium.com/max/800/1*GFUWrX6pBgiDQ5Z-IvzjUw.png)
+- 对应位置没有新的节点——需要 `removeChild(…)` 删除节点
+![对应位置没有新的节点](https://cdn-images-1.medium.com/max/800/1*VRoYwAeWPF0jbiWXsKb2HA.png)
+- 对应位置有不同的节点——需要 `replaceChild(…)` 替换节点
+![对应位置没有新的节点](https://cdn-images-1.medium.com/max/800/1*6iQYEH0APjbuPvYmnD7Qlw.png)
+- 节点相同——需要进一步对比子节点
+![节点相同](https://cdn-images-1.medium.com/max/800/1*x1Eq-uuqgL0z9d9qn_opww.png)
+
+好了，我们写一个 `updateElement(…) ` 函数，传递三个参数（$parent, newNode and oldNode）给它，`$parent` 是虚拟节点对应的真实节点的父节点。现在我们来看怎么处理上面描述的几种情况。
+
+## 没有旧节点
+这是非常简单的：
+``` js
+function updateElement($parent, newNode, oldNode) {
+  if (!oldNode) {
+    $parent.appendChild(
+      createElement(newNode)
+    );
+  }
+}
+```
+
+## 没有新节点
+这里有个问题——如果新虚拟树的当前位置没有节点，我们应该在真实DOM中移除它，但是我们应该怎么做呢？我们知道父元素（已被传递到函数中），因此我们假设调用 `$parent.removeChild(…)` 并传递真实DOM的引用给它。但是我们没有真实DOM的引用。如果我们知道节点在父元素中的位置，我们能够通过 `$parent.childNodes[index]` 得到它的引用， `index` 就是节点在父元素中的索引。
+
+我们假设 `index` 会传递给函数（后面你会看到它真的会被传递）。因此我们的代码会变成这样：
+``` js
+function updateElement($parent, newNode, oldNode, index = 0) {
+  if (!oldNode) {
+    $parent.appendChild(
+      createElement(newNode)
+    );
+  } else if (!newNode) {
+    $parent.removeChild(
+      $parent.childNodes[index]
+    );
+  }
+}
+```
+
+## 节点变化
+首先我们需要一个对比两个节点的函数来告诉我们节点是否改变。我们应该考虑 elements 和文本节点：
+``` js
+function changed(node1, node2) {
+  return typeof node1 !== typeof node2 ||
+         typeof node1 === ‘string’ && node1 !== node2 ||
+         node1.type !== node2.type
+}
+```
+
+现在我们已经有了当前节点在父元素的索引 (`index`) ，我们能很容易用新创建的节点替换它：
+``` js
+function updateElement($parent, newNode, oldNode, index = 0) {
+  if (!oldNode) {
+    $parent.appendChild(
+      createElement(newNode)
+    );
+  } else if (!newNode) {
+    $parent.removeChild(
+      $parent.childNodes[index]
+    );
+  } else if (changed(newNode, oldNode)) {
+    $parent.replaceChild(
+      createElement(newNode),
+      $parent.childNodes[index]
+    );
+  }
+}
+```
+
+## 比较子节点
+最后，但是并非不重要的。我们应该遍历每个节点的子节点并对比它们，通过调用 `updateElement(…)` 。是的，又是递归。
+但是有些写代码之前需要考虑的事情：
+- 我们应该比较只有节点是 Element 的子节点（文本节点没有子节点）
+- 传递当前节点的引用作为父节点
+- 必须一个一个的比较子节点，即使有些地方我们只有 “undefined” 这都是没问题的，我们的函数可以处理
+- 最后，`index`——它只是子节点在子节点数组中的索引
+
+``` js
+function updateElement($parent, newNode, oldNode, index = 0) {
+  if (!oldNode) {
+    $parent.appendChild(
+      createElement(newNode)
+    );
+  } else if (!newNode) {
+    $parent.removeChild(
+      $parent.childNodes[index]
+    );
+  } else if (changed(newNode, oldNode)) {
+    $parent.replaceChild(
+      createElement(newNode),
+      $parent.childNodes[index]
+    );
+  } else if (newNode.type) {
+    const newLength = newNode.children.length;
+    const oldLength = oldNode.children.length;
+    for (let i = 0; i < newLength || i < oldLength; i++) {
+      updateElement(
+        $parent.childNodes[index],
+        newNode.children[i],
+        oldNode.children[i],
+        i
+      );
+    }
+  }
+}
+```
+
+## 所有的代码放在一起
+我们把所有的代码放在 JSFiddle， 就像我承诺的一样它的执行部分只有50行代码。我们来看看：
+{% jsfiddle 0htedLra 'js,resources,html,css,result' %}
+打开开发者工具，观察点击 “Reload” 按钮时变化的应用。
+![](https://cdn-images-1.medium.com/max/800/1*e1s_Zc_fVxL3i0un2ZNEtg.gif)
+
+## 结语
+恭喜！我们已经做到了。我们写一个虚拟DOM的执行程序，它工作的很好。我希望通过阅读这篇文章，你能够理解虚拟DOM和React底层的运行机制。
+
+然而有些事情我们并没有在这里介绍。（在后面的文章中我会尝试着覆盖到它们）
+- 设置／对比／更新 Element 属性（props）
+- 处理事件——在 Elements 上添加事件监听
+- 像React一样在组件中使用虚拟DOM
+- 真正的 DOM 节点引用
+- 在直接改变真实 DOM 的库中使用虚拟DOM——像 jQuery 和它的插件一样
+- 以及更多的内容...
