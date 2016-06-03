@@ -40,5 +40,3 @@ module.exports = {
 #### output.filename
 有单入口输出和多入口输出的区别：
 1. 单入口点
-
-{% jsfiddle 0htedLra 'js,resources,html,css,result' %}
